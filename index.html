@@ -67,13 +67,28 @@
     margin-bottom: 10px;
   }
 
+  .date-banner {
+    display: inline-block;
+    padding: 16px 30px;
+    border-radius: 10px;
+    background: linear-gradient(115deg, #a97c34, #e8c988, #f5e3ae, #d4af5a, #a97c34);
+    background-size: 220% 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 22px rgba(212, 175, 90, 0.35);
+    animation: bannerShine 7s linear infinite;
+  }
+
+  @keyframes bannerShine {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 220% 50%; }
+  }
+
   h1#today-date {
     margin: 0;
     font-family: 'Playfair Display', 'Georgia', serif;
-    font-size: clamp(32px, 6vw, 50px);
+    font-size: clamp(28px, 5.4vw, 46px);
     font-weight: 800;
     letter-spacing: -0.01em;
-    color: var(--text);
+    color: var(--bg-deep);
   }
 
   section {
@@ -165,6 +180,16 @@
     line-height: 1.35;
     color: var(--accent-soft);
     font-weight: 700;
+    animation: quoteGlow 3.4s ease-in-out infinite alternate;
+  }
+
+  @keyframes quoteGlow {
+    0% {
+      box-shadow: 0 0 12px 0 rgba(212, 175, 90, 0.20), 0 0 0 1px var(--border);
+    }
+    100% {
+      box-shadow: 0 0 38px 6px rgba(212, 175, 90, 0.55), 0 0 0 1px var(--border-strong);
+    }
   }
 
   blockquote.quote p {
@@ -236,7 +261,9 @@
 
   <header>
     <span class="eyebrow">Morning Brief</span>
-    <h1 id="today-date"></h1>
+    <div class="date-banner">
+      <h1 id="today-date"></h1>
+    </div>
   </header>
 
   <section class="priorities">
