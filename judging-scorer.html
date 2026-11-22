@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BOB 2026 Judging Scorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root {
+    --navy-900: #06142e;
+    --navy-800: #0a1f44;
+    --navy-700: #12305f;
+    --navy-600: #1b4280;
+    --sky-300: #8fd3ff;
+    --sky-200: #b9e4ff;
+    --sky-100: #e3f4ff;
+    --ink: #eaf4ff;
+    --muted: #9fb8d8;
+    --line: rgba(143, 211, 255, 0.18);
+    --card: rgba(10, 31, 68, 0.72);
+    --band-low: #ff8a8a;
+    --band-meet: #ffd479;
+    --band-exceed: #8fd3ff;
+    --band-top: #7cf0b5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Inter, system-ui, sans-serif;
+    color: var(--ink);
+    background-color: var(--navy-900);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(143, 211, 255, 0.12), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(27, 66, 128, 0.55), transparent 45%),
+      repeating-linear-gradient(45deg, rgba(255,255,255,0.018) 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(-45deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 5px);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 32px 16px 64px; }
+  header h1 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; }
+  header h1 span { color: var(--sky-300); }
+  header p { margin: 6px 0 0; color: var(--muted); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 20px;
+    backdrop-filter: blur(6px);
+  }
+  .card h2 { margin: 0 0 12px; font-size: 16px; font-weight: 600; color: var(--sky-200); }
+
+  .grid2 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .drop {
+    border: 2px dashed rgba(143, 211, 255, 0.4);
+    border-radius: 12px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: background .2s, border-color .2s;
+  }
+  .drop:hover, .drop.over { background: rgba(143, 211, 255, 0.07); border-color: var(--sky-300); }
+  .drop strong { display: block; font-size: 17px; margin-bottom: 4px; }
+  .drop small { color: var(--muted); }
+
+  label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 6px; }
+  input[type=password], input[type=text] {
+    width: 100%; padding: 10px 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: rgba(6, 20, 46, 0.8); color: var(--ink);
+    font: inherit;
+  }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.5; }
+  .check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+  button {
+    font: inherit; font-weight: 600; font-size: 14px;
+    border-radius: 8px; padding: 9px 16px; cursor: pointer;
+    border: 1px solid var(--sky-300); background: var(--sky-300); color: var(--navy-900);
+  }
+  button.ghost { background: transparent; color: var(--sky-200); border-color: var(--line); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.small { padding: 5px 10px; font-size: 12px; }
+
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  .tablewrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 900px; }
+  th, td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; }
+  th { font-size: 12px; font-weight: 600; color: var(--sky-200); text-transform: uppercase; letter-spacing: .04em; }
+  th small { display: block; text-transform: none; letter-spacing: 0; color: var(--muted); font-weight: 500; }
+  td.name { text-align: left; min-width: 220px; }
+  td.name input { background: transparent; border: 1px solid transparent; padding: 4px 6px; font-weight: 600; }
+  td.name input:hover, td.name input:focus { border-color: var(--line); }
+  td.name .meta { font-size: 12px; color: var(--muted); padding-left: 7px; }
+  .score {
+    width: 58px; padding: 6px 4px; text-align: center; border-radius: 6px;
+    border: 1px solid var(--line); background: rgba(6, 20, 46, 0.8); color: var(--ink); font: inherit; font-weight: 600;
+  }
+  .score.b-low { border-color: var(--band-low); color: var(--band-low); }
+  .score.b-meet { border-color: var(--band-meet); color: var(--band-meet); }
+  .score.b-exceed { border-color: var(--band-exceed); color: var(--band-exceed); }
+  .score.b-top { border-color: var(--band-top); color: var(--band-top); }
+  td.total { font-size: 18px; font-weight: 700; color: var(--sky-300); }
+  td.rank { font-weight: 700; }
+  .rank1 { color: #ffd479; }
+  .status { font-size: 12px; color: var(--muted); }
+  .status.err { color: var(--band-low); }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+  .pill.ai { border-color: var(--sky-300); color: var(--sky-300); }
+
+  tr.detail td { text-align: left; background: rgba(6, 20, 46, 0.55); }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; padding: 6px 4px; }
+  .detail-grid h4 { margin: 0 0 4px; font-size: 13px; color: var(--sky-200); }
+  .detail-grid p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); }
+  .summary { font-size: 13px; color: var(--muted); margin: 4px 4px 12px; line-height: 1.5; }
+  .empty { color: var(--muted); text-align: center; padding: 28px; }
+
+  details.criteria summary { cursor: pointer; color: var(--sky-200); font-weight: 600; font-size: 14px; }
+  .crit-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 12px; }
+  .crit-list div { border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: 13px; }
+  .crit-list b { color: var(--sky-300); display: block; margin-bottom: 6px; }
+  .crit-list ul { margin: 0; padding-left: 16px; color: var(--muted); line-height: 1.5; }
+  .spin { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--sky-300); border-right-color: transparent; border-radius: 50%; animation: s 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes s { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>BOB 2026 <span>Judging Scorer</span></h1>
+    <p>Upload team submissions (PDF or PowerPoint). Each file is scored on the five CA Entry criteria and ranked.</p>
+  </header>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>1. Add project files</h2>
+      <div class="drop" id="drop">
+        <strong>Drop PDF or PPTX files here</strong>
+        <small>or click to browse. One file per project. You can add several at once.</small>
+        <input type="file" id="fileInput" accept=".pdf,.pptx" multiple hidden>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. Scoring engine</h2>
+      <label for="apiKey">Anthropic API key (for AI judging)</label>
+      <input type="password" id="apiKey" placeholder="sk-ant-..." autocomplete="off">
+      <label class="check"><input type="checkbox" id="rememberKey"> Remember on this computer</label>
+      <p class="hint">With a key, Claude Opus 5.5 reads each deck and scores it against the criteria with reasons.
+        Without a key, the page gives a quick keyword-based estimate. Either way, you can adjust any score by hand.</p>
+    </section>
+  </div>
+
+  <section class="card">
+    <details class="criteria">
+      <summary>Judging criteria and weightage</summary>
+      <div class="crit-list" id="critList"></div>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content: space-between; margin-bottom: 14px;">
+      <h2 style="margin:0">3. Scores</h2>
+      <div class="row">
+        <button id="scoreAll">Score all unscored</button>
+        <button class="ghost" id="exportCsv">Export CSV</button>
+        <button class="ghost" id="clearAll">Clear all</button>
+      </div>
+    </div>
+    <div class="legend" style="margin-bottom: 12px;">
+      <span><i style="background:var(--band-low)"></i>1 to 4 Does not meet</span>
+      <span><i style="background:var(--band-meet)"></i>5 Meets expectation</span>
+      <span><i style="background:var(--band-exceed)"></i>6 to 7 Exceeds</span>
+      <span><i style="background:var(--band-top)"></i>8 to 10 Outstanding</span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <p class="hint">Team Score = sum of (score x weightage) x 10, out of 100. Same formula as the judging spreadsheet.</p>
+  </section>
+</div>
+
+<script type="module">
+import Anthropic from "https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.6.0/+esm";
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.4.299/build/pdf.worker.min.mjs";
+
+// Criteria from "Score sheet_2026_r1.1 - Judging.xlsx"
+const CRITERIA = [
+  { id: "c1", short: "Project Selection & Target Setting", weight: 0.15, points: [
+    "Explain the process and basis for the selection of the project",
+    "How key stakeholders (internal and external) are impacted by the project",
+    "How the team and team members were selected",
+    "Describe the method and/or tools used for target setting",
+    "Explain how the team links the project target to Line of Business operational goals"],
+    keywords: ["selection","selected","basis","stakeholder","customer","target","goal","objective","kpi","baseline","smart","line of business","operational","team member","pareto","prioriti","problem statement","scope","charter"] },
+  { id: "c2", short: "Originality of the Concept", weight: 0.20, points: [
+    "New or creative approach that leads to changes in products, services, processes, technologies and management practices",
+    "Performed differently compared to the existing concept",
+    "Data collected to justify the changes or improvement needed"],
+    keywords: ["new","novel","innovati","creative","first","unique","idea","concept","design","prototype","existing","current","before","data","collected","analysis","survey","measurement","patent","invent"] },
+  { id: "c3", short: "Improvement & Use of CI Tools", weight: 0.30, points: [
+    "How the CI tools were utilized for the improvement",
+    "How technology (e.g. automation, digitalization) was exploited to help in the improvement",
+    "Initiatives to overcome hurdles",
+    "Is the improvement implementation efficient and effective",
+    "How do the stakeholders contribute to the improvement"],
+    keywords: ["fishbone","ishikawa","5 why","why-why","root cause","pdca","dmaic","lean","six sigma","kaizen","5s","value stream","vsm","fmea","poka","spaghetti","gemba","brainstorm","automation","automate","digital","dashboard","software","app","sensor","implementation","trial","pilot","hurdle","challenge"] },
+  { id: "c4", short: "Value & Benefits Created", weight: 0.25, points: [
+    "What are the value & benefits from it",
+    "Productivity: reduce manpower, manhours",
+    "Savings: realised & secured",
+    "Improve safety, quality, environmental health",
+    "Efficiency, throughput, deliveries, turnaround time"],
+    keywords: ["saving","savings","cost","$","sgd","usd","reduce","reduction","manhour","man-hour","manpower","productivity","safety","quality","defect","environment","efficiency","throughput","turnaround","tat","delivery","realised","realized","secured","per year","annual","%"] },
+  { id: "c5", short: "Teaming", weight: 0.10, points: [
+    "How did the team manage the project",
+    "What are the hurdles and constraints encountered",
+    "Was there good teamwork, use of concepts and improvement tools",
+    "Evidence of collaboration by team and stakeholders",
+    "Lessons learnt and shared best practices in improvement"],
+    keywords: ["team","teamwork","collaborat","meeting","schedule","timeline","gantt","milestone","role","responsib","hurdle","constraint","lesson","learnt","learned","best practice","share","sharing","replicat","sustain","standardi"] },
+];
+
+const BANDS = s => s == null || s === "" ? "" : s <= 4 ? "b-low" : s < 6 ? "b-meet" : s < 8 ? "b-exceed" : "b-top";
+const STORE = "bobScorer.projects.v1";
+const KEY_STORE = "bobScorer.apiKey";
+
+let projects = []; // {id, name, fileName, kind, size, text, slideCount, status, mode, scores:{c1..c5}, reasons:{}, summary, open}
+const files = new Map(); // id -> File (not persisted)
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(projects.map(p => ({ ...p, text: p.text?.slice(0, 200000) })))); } catch {}
+}
+function load() {
+  try { projects = JSON.parse(localStorage.getItem(STORE) || "[]"); } catch { projects = []; }
+  projects.forEach(p => { if (p.status === "scoring") p.status = "idle"; });
+  try {
+    const k = localStorage.getItem(KEY_STORE);
+    if (k) { $("apiKey").value = k; $("rememberKey").checked = true; }
+  } catch {}
+}
+
+function total(p) {
+  let t = 0;
+  for (const c of CRITERIA) t += (Number(p.scores?.[c.id]) || 0) * c.weight;
+  return Math.round(t * 10 * 100) / 100;
+}
+function isScored(p) { return CRITERIA.every(c => p.scores?.[c.id] !== undefined && p.scores?.[c.id] !== ""); }
+
+// ---------- File reading ----------
+async function readPptx(file) {
+  const zip = await JSZip.loadAsync(file);
+  const slideNames = Object.keys(zip.files)
+    .filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+    .sort((a, b) => +a.match(/(\d+)\.xml/)[1] - +b.match(/(\d+)\.xml/)[1]);
+  const parts = [];
+  let firstTitle = "";
+  for (let i = 0; i < slideNames.length; i++) {
+    const xml = await zip.file(slideNames[i]).async("string");
+    const paras = xml.split(/<\/a:p>/).map(p => [...p.matchAll(/<a:t[^>]*>([^<]*)<\/a:t>/g)].map(m => m[1]).join("")).filter(Boolean);
+    const num = slideNames[i].match(/(\d+)\.xml/)[1];
+    const notesFile = zip.file(`ppt/notesSlides/notesSlide${num}.xml`);
+    let notes = "";
+    if (notesFile) {
+      const nx = await notesFile.async("string");
+      notes = [...nx.matchAll(/<a:t[^>]*>([^<]*)<\/a:t>/g)].map(m => m[1]).join(" ").replace(/^\s*\d+\s*$/, "").trim();
+    }
+    if (!firstTitle && paras.length) firstTitle = paras[0];
+    parts.push(`--- Slide ${i + 1} ---\n${paras.join("\n")}${notes ? `\n[Speaker notes] ${notes}` : ""}`);
+  }
+  return { text: decodeXml(parts.join("\n\n")), slideCount: slideNames.length, title: decodeXml(firstTitle) };
+}
+function decodeXml(s) {
+  return s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, "&");
+}
+async function readPdf(file) {
+  const doc = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+  const parts = [];
+  let title = "";
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i);
+    const tc = await page.getTextContent();
+    const t = tc.items.map(it => it.str + (it.hasEOL ? "\n" : " ")).join("").trim();
+    if (!title && t) title = t.split("\n")[0].slice(0, 90);
+    parts.push(`--- Page ${i} ---\n${t}`);
+  }
+  return { text: parts.join("\n\n"), slideCount: doc.numPages, title };
+}
+
+// crypto.randomUUID only exists on https/localhost, not when the file is opened from disk
+function makeId() {
+  return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+}
+
+window.addEventListener("unhandledrejection", e => alert("Something went wrong: " + (e.reason?.message || e.reason)));
+window.addEventListener("error", e => alert("Something went wrong: " + e.message));
+
+async function addFiles(list) {
+  for (const file of list) {
+    const ext = file.name.toLowerCase().split(".").pop();
+    if (!["pdf", "pptx"].includes(ext)) { alert(`${file.name}: only .pdf and .pptx files are supported.`); continue; }
+    const id = makeId();
+    const p = { id, name: file.name.replace(/\.(pdf|pptx)$/i, ""), fileName: file.name, kind: ext, size: file.size,
+      text: "", slideCount: 0, status: "reading", mode: "", scores: {}, reasons: {}, summary: "", open: false };
+    projects.push(p); files.set(id, file); render();
+    try {
+      const r = ext === "pptx" ? await readPptx(file) : await readPdf(file);
+      Object.assign(p, { text: r.text, slideCount: r.slideCount, status: "idle" });
+      if (!r.text.trim()) p.note = "No readable text found. Scanned slides need AI mode (PDF).";
+    } catch (e) {
+      p.status = "error"; p.error = "Could not read file: " + e.message;
+    }
+    save(); render();
+  }
+}
+
+// ---------- Scoring ----------
+const RESULT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["project_title", "summary", ...CRITERIA.map(c => c.id)],
+  properties: {
+    project_title: { type: "string", description: "Short project title as stated in the submission" },
+    summary: { type: "string", description: "Two or three sentence overview of the project and its strongest and weakest areas" },
+    ...Object.fromEntries(CRITERIA.map(c => [c.id, {
+      type: "object", additionalProperties: false, required: ["score", "rationale"],
+      properties: {
+        score: { type: "number", description: "Score from 1 to 10, half points allowed" },
+        rationale: { type: "string", description: "Two to four sentences citing specific evidence from the submission" },
+      },
+    }])),
+  },
+};
+
+function rubricText() {
+  return CRITERIA.map((c, i) => `${c.id}. ${c.short} (${Math.round(c.weight * 100)}%)\n${c.points.map(p => "  - " + p).join("\n")}`).join("\n\n");
+}
+
+async function scoreWithClaude(p, apiKey) {
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const file = files.get(p.id);
+  const content = [];
+  if (p.kind === "pdf" && file && file.size < 30 * 1024 * 1024) {
+    const b64 = await new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res(String(fr.result).split(",")[1]);
+      fr.onerror = rej;
+      fr.readAsDataURL(file);
+    });
+    content.push({ type: "document", source: { type: "base64", media_type: "application/pdf", data: b64 } });
+  } else {
+    if (!p.text?.trim()) throw new Error("No text found in this file. Re-add the file or use a PDF export.");
+    content.push({ type: "text", text: `<submission file="${p.fileName}">\n${p.text}\n</submission>` });
+  }
+  content.push({ type: "text", text:
+`You are an experienced judge for the ST Engineering BOB 2026 continuous improvement awards (CA Entry). Score the attached team submission against each of the five criteria below.
+
+Criteria:
+${rubricText()}
+
+Scoring scale (use half points where useful):
+- 1 to 4: Does not meet expectations
+- 5: Meets expectation
+- 6 to 7: Exceeds expectation
+- 8 to 10: Outstanding
+
+Judge only what the submission shows. If a sub-point is not evidenced, score lower and say what is missing. Quote concrete figures (savings, manhours, percentages) where they appear. Write rationales in plain, direct language.` });
+
+  const stream = client.beta.messages.stream({
+    model: "claude-opus-5-5",
+    max_tokens: 16000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "high", format: { type: "json_schema", schema: RESULT_SCHEMA } },
+    messages: [{ role: "user", content }],
+  });
+  const msg = await stream.finalMessage();
+  if (msg.stop_reason === "refusal") throw new Error("The model declined to score this file.");
+  if (msg.stop_reason === "max_tokens") throw new Error("Response was cut off. Try again.");
+  const textBlock = msg.content.find(b => b.type === "text");
+  if (!textBlock) throw new Error("No result returned.");
+  const r = JSON.parse(textBlock.text);
+  for (const c of CRITERIA) {
+    const s = Math.min(10, Math.max(1, Math.round(Number(r[c.id]?.score) * 2) / 2));
+    p.scores[c.id] = s;
+    p.reasons[c.id] = r[c.id]?.rationale || "";
+  }
+  p.summary = r.summary || "";
+  if (r.project_title && p.name === p.fileName.replace(/\.(pdf|pptx)$/i, "")) p.name = r.project_title;
+  p.mode = "ai";
+}
+
+function scoreQuick(p) {
+  const text = (p.text || "").toLowerCase();
+  if (!text.trim()) throw new Error("No readable text. Add an API key so Claude can read the slides directly.");
+  const words = text.split(/\s+/).length;
+  for (const c of CRITERIA) {
+    const hits = c.keywords.filter(k => text.includes(k));
+    const coverage = hits.length / c.keywords.length;
+    let s = 2 + coverage * 9;
+    if (c.id === "c4") {
+      const figures = (text.match(/(\$|sgd|usd)\s?[\d,.]+|\d+(\.\d+)?\s?%|\d+\s?(man-?hours?|hrs|hours|days)/g) || []).length;
+      s += Math.min(2, figures * 0.25);
+    }
+    if (words < 300) s -= 1;
+    s = Math.min(9, Math.max(1, Math.round(s * 2) / 2));
+    p.scores[c.id] = s;
+    p.reasons[c.id] = hits.length
+      ? `Found evidence terms: ${hits.slice(0, 10).join(", ")}${hits.length > 10 ? "..." : ""}. Coverage ${Math.round(coverage * 100)}% of expected terms.`
+      : "No supporting terms found for this criterion.";
+  }
+  p.summary = `Quick estimate based on keyword coverage across ${p.slideCount} ${p.kind === "pdf" ? "pages" : "slides"} (${words} words). Treat as a starting point and adjust by hand, or add an API key for AI judging.`;
+  p.mode = "quick";
+}
+
+async function scoreProject(p) {
+  const apiKey = $("apiKey").value.trim();
+  p.status = "scoring"; p.error = ""; render();
+  try {
+    if (apiKey) await scoreWithClaude(p, apiKey);
+    else scoreQuick(p);
+    p.status = "done";
+  } catch (e) {
+    p.status = "error";
+    p.error = e?.status === 401 ? "API key was rejected." : (e.message || String(e));
+  }
+  save(); render();
+}
+
+// ---------- Rendering ----------
+function renderHead() {
+  $("thead").innerHTML = `<tr>
+    <th style="text-align:left">Project</th>
+    ${CRITERIA.map((c, i) => `<th>C${i + 1}<small>${esc(c.short)}<br>${Math.round(c.weight * 100)}%</small></th>`).join("")}
+    <th>Team Score<small>out of 100</small></th>
+    <th>Rank</th>
+    <th></th>
+  </tr>`;
+  $("critList").innerHTML = CRITERIA.map((c, i) =>
+    `<div><b>C${i + 1}. ${esc(c.short)} (${Math.round(c.weight * 100)}%)</b><ul>${c.points.map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("");
+}
+
+function ranks() {
+  const totals = projects.map(p => isScored(p) ? total(p) : null);
+  return totals.map(t => t == null ? "" : 1 + totals.filter(o => o != null && o > t).length);
+}
+
+function render() {
+  const tb = $("tbody");
+  if (!projects.length) {
+    tb.innerHTML = `<tr><td colspan="9" class="empty">No projects yet. Add PDF or PPTX files above.</td></tr>`;
+    return;
+  }
+  const rk = ranks();
+  tb.innerHTML = projects.map((p, idx) => {
+    const status =
+      p.status === "reading" ? `<span class="status"><span class="spin"></span>Reading file</span>` :
+      p.status === "scoring" ? `<span class="status"><span class="spin"></span>Scoring</span>` :
+      p.status === "error" ? `<span class="status err">${esc(p.error)}</span>` :
+      p.mode === "ai" ? `<span class="pill ai">AI scored</span>` :
+      p.mode === "quick" ? `<span class="pill">Quick estimate</span>` :
+      p.note ? `<span class="status">${esc(p.note)}</span>` : "";
+    const cells = CRITERIA.map(c => {
+      const v = p.scores?.[c.id] ?? "";
+      return `<td><input class="score ${BANDS(v)}" type="number" min="1" max="10" step="0.5" value="${v}" data-id="${p.id}" data-c="${c.id}" title="${esc(p.reasons?.[c.id] || "")}"></td>`;
+    }).join("");
+    const canScore = p.status !== "reading" && p.status !== "scoring";
+    const hasDetail = p.summary || Object.keys(p.reasons || {}).length;
+    const detail = p.open && hasDetail ? `<tr class="detail"><td colspan="9">
+      ${p.summary ? `<p class="summary">${esc(p.summary)}</p>` : ""}
+      <div class="detail-grid">${CRITERIA.map((c, i) => `<div><h4>C${i + 1}. ${esc(c.short)}: ${p.scores?.[c.id] ?? "-"}</h4><p>${esc(p.reasons?.[c.id] || "No notes.")}</p></div>`).join("")}</div>
+    </td></tr>` : "";
+    return `<tr>
+      <td class="name">
+        <input type="text" value="${esc(p.name)}" data-name="${p.id}">
+        <div class="meta">${esc(p.fileName)} &middot; ${p.slideCount || "?"} ${p.kind === "pdf" ? "pages" : "slides"}</div>
+        <div class="meta">${status}</div>
+      </td>
+      ${cells}
+      <td class="total">${isScored(p) ? total(p).toFixed(2) : "-"}</td>
+      <td class="rank ${rk[idx] === 1 ? "rank1" : ""}">${rk[idx] || "-"}</td>
+      <td style="white-space:nowrap">
+        <button class="small" data-score="${p.id}" ${canScore ? "" : "disabled"}>${isScored(p) ? "Rescore" : "Score"}</button>
+        ${hasDetail ? `<button class="small ghost" data-toggle="${p.id}">${p.open ? "Hide" : "Why"}</button>` : ""}
+        <button class="small ghost" data-del="${p.id}" title="Remove">&times;</button>
+      </td>
+    </tr>${detail}`;
+  }).join("");
+}
+
+// ---------- Events ----------
+const drop = $("drop"), fileInput = $("fileInput");
+drop.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", e => { addFiles([...e.target.files]); fileInput.value = ""; });
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => addFiles([...e.dataTransfer.files]));
+
+$("tbody").addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  const find = id => projects.find(p => p.id === id);
+  if (t.dataset.score) {
+    const p = find(t.dataset.score);
+    if (p.kind === "pdf" && !files.get(p.id) && $("apiKey").value.trim() && !p.text?.trim()) {
+      alert("Please re-add this file. The original file is not kept after a page reload."); return;
+    }
+    scoreProject(p);
+  }
+  if (t.dataset.toggle) { const p = find(t.dataset.toggle); p.open = !p.open; render(); }
+  if (t.dataset.del) { projects = projects.filter(p => p.id !== t.dataset.del); files.delete(t.dataset.del); save(); render(); }
+});
+$("tbody").addEventListener("change", e => {
+  const el = e.target;
+  if (el.dataset.c) {
+    const p = projects.find(x => x.id === el.dataset.id);
+    let v = el.value === "" ? "" : Math.min(10, Math.max(1, Number(el.value)));
+    p.scores[el.dataset.c] = v;
+    save(); render();
+  }
+  if (el.dataset.name) { projects.find(x => x.id === el.dataset.name).name = el.value; save(); }
+});
+
+$("scoreAll").addEventListener("click", async () => {
+  const btn = $("scoreAll"); btn.disabled = true;
+  const todo = projects.filter(p => !isScored(p) && (p.status === "idle" || p.status === "error"));
+  await Promise.all(todo.map(scoreProject));
+  btn.disabled = false;
+});
+$("clearAll").addEventListener("click", () => {
+  if (!projects.length || !confirm("Remove all projects and scores?")) return;
+  projects = []; files.clear(); save(); render();
+});
+$("exportCsv").addEventListener("click", () => {
+  const rk = ranks();
+  const head = ["Project", "File", ...CRITERIA.map((c, i) => `C${i + 1} ${c.short} (${Math.round(c.weight * 100)}%)`), "Team Score", "Rank", "Method",
+    ...CRITERIA.map((c, i) => `C${i + 1} rationale`)];
+  const rows = projects.map((p, i) => [p.name, p.fileName, ...CRITERIA.map(c => p.scores?.[c.id] ?? ""),
+    isScored(p) ? total(p).toFixed(2) : "", rk[i], p.mode === "ai" ? "AI" : p.mode === "quick" ? "Quick estimate" : "",
+    ...CRITERIA.map(c => p.reasons?.[c.id] || "")]);
+  const csv = [head, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" }));
+  a.download = "BOB2026_scores.csv"; a.click();
+});
+$("rememberKey").addEventListener("change", e => {
+  try { e.target.checked ? localStorage.setItem(KEY_STORE, $("apiKey").value.trim()) : localStorage.removeItem(KEY_STORE); } catch {}
+});
+$("apiKey").addEventListener("input", () => {
+  try { if ($("rememberKey").checked) localStorage.setItem(KEY_STORE, $("apiKey").value.trim()); } catch {}
+});
+
+window.__bob = { addFiles, projects: () => projects };
+load(); renderHead(); render();
+</script>
+<script>
+  // If the libraries from the internet could not load, the module above never runs. Tell the user.
+  window.addEventListener("load", () => setTimeout(() => {
+    if (!window.__bob || typeof JSZip === "undefined") {
+      const d = document.createElement("div");
+      d.style.cssText = "position:fixed;top:0;left:0;right:0;padding:12px 16px;background:#ff8a8a;color:#06142e;font-weight:600;z-index:99;text-align:center";
+      d.textContent = "The page could not load its file readers from the internet. Check your connection, or ask IT whether cdnjs.cloudflare.com and cdn.jsdelivr.net are blocked.";
+      document.body.prepend(d);
+    }
+  }, 4000));
+</script>
+</body>
+</html>
